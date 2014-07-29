@@ -49,7 +49,7 @@ service = build('genomics', 'v1beta', http=http)
 
 
 #
-# This example gets the read bases for NA12878 with at specific a position
+# This example gets the read bases for NA12878 at specific a position
 #
 dataset_id = 376902546192 # This is the 1000 Genomes dataset ID
 reference_name = '22'
