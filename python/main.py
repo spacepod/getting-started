@@ -71,8 +71,8 @@ na12878 = readsets[0]['id']
 # lookup the reads at the position we are interested in
 request = service.reads().search(
   body={'readsetIds': [na12878],
-        'sequenceName' : reference_name,
-        'sequenceStart' : reference_position,
+        'sequenceName': reference_name,
+        'sequenceStart': reference_position,
         'sequenceEnd': reference_position,
         'maxResults': '1024'},
   fields='reads(position,originalBases,cigar)')
