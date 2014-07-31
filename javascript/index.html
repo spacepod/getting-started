@@ -28,11 +28,18 @@ limitations under the License.
 
 <script type="text/javascript">
 // Setup the genomics plugin
-//debugger;
-$.initGenomics({
-  clientId: '850943720089.apps.googleusercontent.com',
-  initCallback: runExamples
-});
+var clientId = window.location.hash.substring(1);
+if (!clientId) {
+  alert('A client ID is required. Please append one to the url: ' +
+      'http://localhost:8000#my-client-id');
+} else {
+  $('#results').text('Loading');
+  $.initGenomics({
+    clientId: clientId,
+    initCallback: runExamples
+  });
+}
+
 function runExamples() {
   $.authGenomics(example1);
 }
@@ -46,39 +53,44 @@ function example1() {
   var referencePosition = 51005354;
 
   // 1. First find the readset ID for NA12878
-  gapi.client.genomics.readsets.search({
-    'datasetIds': [datasetId],
-    'name': 'NA12878'
-//TODO:    'fields': 'readsets(id)'
-  }).execute(function(json) {
-    var readsets = json.readsets || [];
-    if (readsets.length != 1) {
-      throw 'Searching for NA12878 didn\'t return the right number of results';
+  $.genomicsAjax('/readsets/search?fields=readsets(id)', {
+    'method': 'POST',
+    'data': JSON.stringify({'datasetIds': [datasetId], 'name': 'NA12878'}),
+    'success': function(json) {
+      var readsets = json.readsets || [];
+      if (readsets.length != 1) {
+        throw 'Searching for NA12878 didn\'t return the right number of results';
+      }
+
+      var na12878 = readsets[0].id;
+
+
+      // 2. Once we have the readset ID,
+      // lookup the reads at the position we are interested in
+      var params = {
+        'readsetIds': [na12878],
+        'sequenceName': referenceName,
+        'sequenceStart': referencePosition,
+        'sequenceEnd': referencePosition,
+        'maxResults': '1024'
+      };
+      var readFields = 'reads(position,originalBases,cigar)';
+      $.genomicsAjax('/reads/search?fields=' + readFields, {
+        'method': 'POST',
+        'data': JSON.stringify(params),
+        'success': function(json) {
+          var reads = json.reads || [];
+          var bases = _.map(reads, function(read) {
+            return read.originalBases[referencePosition - read.position]
+          });
+          var results = $('#results').text('NA12878 bases on ' + referenceName +
+              ' at ' + referencePosition);
+          _.each(_.countBy(bases), function(count, base) {
+            $("<div/>").text(base + ": " + count).appendTo(results);
+          });
+        }
+      });
     }
-
-    var na12878 = readsets[0].id;
-
-
-    // 2. Once we have the readset ID,
-    // lookup the reads at the position we are interested in
-    gapi.client.genomics.reads.search({
-      'readsetIds': [na12878],
-      'sequenceName': referenceName,
-      'sequenceStart': referencePosition,
-      'sequenceEnd': referencePosition,
-      'maxResults': '1024',
-//TODO:      'fields': 'reads(position,originalBases,cigar)'
-    }).execute(function(json) {
-      var reads = json.reads || [];
-      var bases = _.map(reads, function(read) {
-        return read.originalBases[referencePosition - read.position]
-      });
-      var results = $('#results').text('NA12878 bases on ' + referenceName +
-          ' at ' + referencePosition);
-      _.each(_.countBy(bases), function(count, base) {
-        $("<div/>").text(base + ": " + count).appendTo(results);
-      });
-    });
   });
 }
 </script>
