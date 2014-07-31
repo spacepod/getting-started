@@ -34,65 +34,57 @@ if (!clientId) {
       'http://localhost:8000#my-client-id');
 } else {
   $('#results').text('Loading');
-  $.initGenomics({
-    clientId: clientId,
-    initCallback: runExamples
-  });
-}
-
-function runExamples() {
-  $.authGenomics(example1);
+  $.initGenomics({clientId: clientId});
 }
 
 //
 // This example gets the read bases for NA12878 at specific a position
 //
-function example1() {
-  var datasetId = 376902546192; // This is the 1000 Genomes dataset ID
-  var referenceName = '22';
-  var referencePosition = 51005354;
+var datasetId = 376902546192; // This is the 1000 Genomes dataset ID
+var referenceName = '22';
+var referencePosition = 51005354;
 
-  // 1. First find the readset ID for NA12878
-  $.genomicsAjax('/readsets/search?fields=readsets(id)', {
-    'method': 'POST',
-    'data': JSON.stringify({'datasetIds': [datasetId], 'name': 'NA12878'}),
-    'success': function(json) {
-      var readsets = json.readsets || [];
-      if (readsets.length != 1) {
-        throw 'Searching for NA12878 didn\'t return the right number of results';
-      }
-
-      var na12878 = readsets[0].id;
-
-
-      // 2. Once we have the readset ID,
-      // lookup the reads at the position we are interested in
-      var params = {
-        'readsetIds': [na12878],
-        'sequenceName': referenceName,
-        'sequenceStart': referencePosition,
-        'sequenceEnd': referencePosition,
-        'maxResults': '1024'
-      };
-      var readFields = 'reads(position,originalBases,cigar)';
-      $.genomicsAjax('/reads/search?fields=' + readFields, {
-        'method': 'POST',
-        'data': JSON.stringify(params),
-        'success': function(json) {
-          var reads = json.reads || [];
-          var bases = _.map(reads, function(read) {
-            return read.originalBases[referencePosition - read.position]
-          });
-          var results = $('#results').text('NA12878 bases on ' + referenceName +
-              ' at ' + referencePosition);
-          _.each(_.countBy(bases), function(count, base) {
-            $("<div/>").text(base + ": " + count).appendTo(results);
-          });
-        }
-      });
+// 1. First find the readset ID for NA12878
+$.genomicsAjax('/readsets/search?fields=readsets(id)', {
+  method: 'POST',
+  data: JSON.stringify({datasetIds: [datasetId], name: 'NA12878'}),
+  success: function(json) {
+    var readsets = json.readsets || [];
+    if (readsets.length != 1) {
+      throw 'Searching for NA12878 didn\'t return the right number of results';
     }
-  });
-}
+
+    var na12878 = readsets[0].id;
+
+
+    // 2. Once we have the readset ID,
+    // lookup the reads at the position we are interested in
+    var params = {
+      readsetIds: [na12878],
+      sequenceName: referenceName,
+      sequenceStart: referencePosition,
+      sequenceEnd: referencePosition,
+      maxResults: '1024'
+    };
+    var readFields = 'reads(position,originalBases,cigar)';
+    $.genomicsAjax('/reads/search?fields=' + readFields, {
+      method: 'POST',
+      data: JSON.stringify(params),
+      success: function(json) {
+        var reads = json.reads || [];
+        var bases = _.map(reads, function(read) {
+          return read.originalBases[referencePosition - read.position]
+        });
+        var results = $('#results').text('NA12878 bases on ' + referenceName +
+            ' at ' + referencePosition);
+        _.each(_.countBy(bases), function(count, base) {
+          $("<div/>").text(base + ": " + count).appendTo(results);
+        });
+      }
+    });
+  }
+});
+
 </script>
 </body>
 </html>
