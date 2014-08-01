@@ -73,6 +73,8 @@ $.genomicsAjax('/readsets/search?fields=readsets(id)', {
       success: function(json) {
         var reads = json.reads || [];
         var bases = _.map(reads, function(read) {
+          // Note: This is simplistic -
+          // the cigar should be considered for real code
           return read.originalBases[referencePosition - read.position]
         });
         var results = $('#results').text('NA12878 bases on ' + referenceName +
