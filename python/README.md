@@ -7,10 +7,10 @@
 2. [Install pip](http://www.pip-installer.org/en/latest/installing.html)
 3. Install the python client library and run the code:
 
-```
-pip install --upgrade google-api-python-client
-python main.py client_id client_secret
-```
+    ```
+    pip install --upgrade google-api-python-client
+    python main.py client_id client_secret
+    ```
 
 
 # More information
