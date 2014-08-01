@@ -10,13 +10,13 @@
 3. Get the client library and oauth dependencies.
 (Note: this will [require mercurial](http://golang.org/s/gogetcmd))
 
-```
-go get code.google.com/p/google-api-go-client/genomics/v1beta
-go get code.google.com/p/goauth2/oauth
-```
+    ```
+    go get code.google.com/p/google-api-go-client/genomics/v1beta
+    go get code.google.com/p/goauth2/oauth
+    ```
 
 4. Run the code:
 
-```
-go run main.go client_id client_secret
-```
+    ```
+    go run main.go client_id client_secret
+    ```
