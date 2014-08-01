@@ -5,7 +5,7 @@
 "Client ID for native application" you just made.
 
 2. [Install go](http://golang.org/doc/install)
-(make sure you set up a `$GOPATH`)
+(make sure you set up a [$GOPATH](https://code.google.com/p/go-wiki/wiki/GOPATH))
 
 3. Get the client library and oauth dependencies.
 (Note: this will [require mercurial](http://golang.org/s/gogetcmd))
