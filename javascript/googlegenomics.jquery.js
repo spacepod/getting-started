@@ -119,8 +119,9 @@ limitations under the License.
     } else {
       // The API hasn't loaded yet, queue the callback
       var oldCallback = settings.initCallback;
-      settings.initCallback = !oldCallback ? callback : function() {
-        callback();
+      var newCallback = function() { $.authGenomics(callback) };
+      settings.initCallback = !oldCallback ? newCallback : function() {
+        newCallback();
         oldCallback();
       }
     }
