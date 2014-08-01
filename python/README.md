@@ -11,3 +11,8 @@
 pip install --upgrade google-api-python-client
 python main.py client_id client_secret
 ```
+
+
+# More information
+
+This example is using [Google's python client library](https://developers.google.com/api-client-library/python/), which has [pydoc for the genomics methods](https://developers.google.com/resources/api-libraries/documentation/genomics/v1beta/python/latest/).
