@@ -6,3 +6,5 @@
 python/credentials.dat
 
 java/target
+
+go/.oauth2_cache.json
