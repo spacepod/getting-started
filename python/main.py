@@ -19,7 +19,7 @@ import httplib2
 from apiclient.discovery import build
 from collections import Counter
 from oauth2client import tools
-from oauth2client.client import OAuth2WebServerFlow
+from oauth2client.client import flow_from_clientsecrets
 from oauth2client.file import Storage
 from oauth2client.tools import run_flow
 
@@ -27,19 +27,23 @@ from oauth2client.tools import run_flow
 parser = argparse.ArgumentParser(description=__doc__,
     formatter_class=argparse.RawDescriptionHelpFormatter,
     parents=[tools.argparser])
-parser.add_argument('client_id',
-                    help='A Google "Client ID for native application" that '
+parser.add_argument('--client_secrets_filename',
+                    default='client_secrets.json',
+                    help='The filename of a client_secrets.json file from a '
+                         'Google "Client ID for native application" that '
                          'has the Genomics API enabled.')
-parser.add_argument('client_secret',
-                    help='The client secret that matches the Client ID.')
 flags = parser.parse_args()
 
 # Authorization
 storage = Storage('credentials.dat')
 credentials = storage.get()
 if credentials is None or credentials.invalid:
-  flow = OAuth2WebServerFlow(flags.client_id, flags.client_secret,
-                             'https://www.googleapis.com/auth/genomics')
+  flow = flow_from_clientsecrets(
+    flags.client_secrets_filename,
+    scope='https://www.googleapis.com/auth/genomics',
+    message='You need to copy a client_secrets.json file into this directory, '
+            'or pass in the --client_secrets_filename option to specify where '
+            'one exists. See the README for more help.')
   credentials = run_flow(flow, storage, flags)
 
 # Create a genomics API service
