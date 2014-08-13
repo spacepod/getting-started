@@ -1,0 +1,4 @@
+.httr-oauth
+shinyapps/
+.Rbuildignore
+.Rapp.history
