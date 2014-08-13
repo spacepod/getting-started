@@ -8,7 +8,7 @@
 
     ```
     pip install --upgrade google-api-python-client
-    python main.py client_id_string client_secret_string
+    python main.py
     ```
 
 # More information
