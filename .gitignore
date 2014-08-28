@@ -1,9 +1,8 @@
 */.idea
 *.iml
 */client_secrets.json
+*/credentials.dat
 *~
-
-python/credentials.dat
 
 java/target
 
