@@ -18,11 +18,11 @@ If you see the error:
 Can't locate object method "host_port" via package "URI::_generic" at /Library/Perl/5.16/Net/OAuth2/Profile.pm line 197.
 ```
 
-it's because the access token in credentials.dat has expired, and this error
-shows up when Net::OAuth2 tries to refresh it. I don't know how to fix this issue -
+it's because the access token in `credentials.dat` has expired, and this error
+shows up when `Net::OAuth2` tries to refresh it. I don't know how to fix this issue -
 so if you do, a pull request (or explanatory issue) would be very welcome!
 
-In the meantime, you can just manually remove the credetials.dat file
+In the meantime, you can just manually remove the `credentials.dat` file
 and everything will work again:
 ```
 cd getting-started/perl
