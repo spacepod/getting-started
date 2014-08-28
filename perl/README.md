@@ -19,10 +19,8 @@ Can't locate object method "host_port" via package "URI::_generic" at /Library/P
 ```
 
 it's because the access token in credentials.dat has expired, and this error
-shows up when Net::OAuth2 tries to refresh it.
-
-I don't know how to fix this issue - so if you do, a pull request
-(or explanatory issue) would be very welcome!
+shows up when Net::OAuth2 tries to refresh it. I don't know how to fix this issue -
+so if you do, a pull request (or explanatory issue) would be very welcome!
 
 In the meantime, you can just manually remove the credetials.dat file
 and everything will work again:
