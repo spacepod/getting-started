@@ -93,29 +93,30 @@ func main() {
 	// This example gets the read bases for NA12878 at specific a position
 	//
 	datasetId := "376902546192" // This is the 1000 Genomes dataset ID
+	sample := "NA12872"
 	referenceName := "22"
-	referencePosition := uint64(51005354)
+	referencePosition := uint64(51003836)
 
-	// 1. First find the readset ID for NA12878
+	// 1. First find the readset ID for the sample
 	// TODO: The go client library doesn't currently have support for partial responses
 	// see https://code.google.com/p/google-api-go-client/issues/detail?id=38
 	rsRes, err := svc.Readsets.Search(&genomics.SearchReadsetsRequest{
 		DatasetIds: []string{datasetId},
-		Name:       "NA12878",
+		Name:       sample,
 	}).Do()
 	if err != nil {
 		log.Fatal(err)
 	}
 	if len(rsRes.Readsets) != 1 {
-		fmt.Fprintln(os.Stderr, "Searching for NA12878 didn't return the right number of results")
+		fmt.Fprintln(os.Stderr, "Searching for "+sample+" didn't return the right number of readsets")
 		return
 	}
-	na12878 := rsRes.Readsets[0].Id
+	readsetId := rsRes.Readsets[0].Id
 
 	// 2. Once we have the readset ID,
 	// lookup the reads at the position we are interested in
 	rRes, err := svc.Reads.Search(&genomics.SearchReadsRequest{
-		ReadsetIds:    []string{na12878},
+		ReadsetIds:    []string{readsetId},
 		SequenceName:  referenceName,
 		SequenceStart: referencePosition,
 		SequenceEnd:   referencePosition,
@@ -132,8 +133,55 @@ func main() {
 		bases[base]++
 	}
 
-	fmt.Printf("NA12878 bases on %s at %d\n", referenceName, referencePosition)
+	fmt.Printf("%s bases on %s at %d are\n", sample, referenceName, referencePosition)
 	for base, count := range bases {
 		fmt.Printf("%c: %d\n", base, count)
 	}
+
+	//
+	// This example gets the variants for a sample at a specific position
+	// TODO: The Go client library hasn't updated in a long while, so it
+	// doesn't have real variant support and none of this works!
+
+	//	// 1. First find the call set ID for the sample
+	//	csRes, err := svc.Callsets.Search(&genomics.SearchCallSetsRequest{
+	//		VariantSetIds: []string{datasetId},
+	//		Name:       sample,
+	//	}).Do()
+	//	if err != nil {
+	//		log.Fatal(err)
+	//	}
+	//	if len(csRes.CallSets) != 1 {
+	//		fmt.Fprintln(os.Stderr, "Searching for " + sample + " didn't return the right number of call sets")
+	//		return
+	//	}
+	//	callSetId := csRes.CallSets[0].Id
+	//
+	//	// 2. Once we have the call set ID,
+	//	// lookup the variants that overlap the position we are interested in
+	//	vRes, err := svc.Variants.Search(&genomics.SearchVariantsRequest{
+	//		CallSetIds:    []string{callSetId},
+	//		ReferenceName:  referenceName,
+	//      // Note: currently, variants are 0-based and reads are 1-based,
+	//      // reads will move to 0-based coordinates in the next version of the API
+	//		Start: referencePosition - 1,
+	//		End:   referencePosition,
+	//	}).Do()
+	//	if err != nil {
+	//		log.Fatal(err)
+	//	}
+	//
+	//  variant := vRes.Variants[0]
+	//  variantName := variant.Names[0]
+	//
+	//	genotype := make([]string, 2)
+	//	for i, g := range variant.Calls[0].Genotype {
+	//		if (g == 0) {
+	//			genotype[i] = variant.ReferenceBases
+	//		} else {
+	//			genotype[i] = variant.AlternateBases[g - 1]
+	//		}
+	//	}
+	//
+	//	fmt.Printf("the called genotype is %s for %s", sample, variantName)
 }
