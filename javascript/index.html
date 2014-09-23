@@ -38,29 +38,31 @@ if (!clientId) {
 }
 
 //
-// This example gets the read bases for NA12878 at specific a position
+// This example gets the read bases for a sample at specific a position
 //
 var datasetId = 376902546192; // This is the 1000 Genomes dataset ID
+var sample = 'NA12872';
 var referenceName = '22';
-var referencePosition = 51005354;
+var referencePosition = 51003836;
 
-// 1. First find the readset ID for NA12878
+// 1. First find the readset ID for the sample
 $.genomicsAjax('/readsets/search?fields=readsets(id)', {
   method: 'POST',
-  data: JSON.stringify({datasetIds: [datasetId], name: 'NA12878'}),
+  data: JSON.stringify({datasetIds: [datasetId], name: sample}),
   success: function(json) {
     var readsets = json.readsets || [];
     if (readsets.length != 1) {
-      throw 'Searching for NA12878 didn\'t return the right number of results';
+      throw 'Searching for ' + sample +
+          ' didn\'t return the right number of readsets';
     }
 
-    var na12878 = readsets[0].id;
+    var readsetId = readsets[0].id;
 
 
     // 2. Once we have the readset ID,
     // lookup the reads at the position we are interested in
     var params = {
-      readsetIds: [na12878],
+      readsetIds: [readsetId],
       sequenceName: referenceName,
       sequenceStart: referencePosition,
       sequenceEnd: referencePosition,
@@ -77,11 +79,61 @@ $.genomicsAjax('/readsets/search?fields=readsets(id)', {
           // the cigar should be considered for real code
           return read.originalBases[referencePosition - read.position]
         });
-        var results = $('#results').text('NA12878 bases on ' + referenceName +
-            ' at ' + referencePosition);
+        var results = $('#results').text(sample + ' bases on ' + referenceName +
+            ' at ' + referencePosition + ' are');
         _.each(_.countBy(bases), function(count, base) {
           $("<div/>").text(base + ": " + count).appendTo(results);
         });
+      }
+    });
+  }
+});
+
+
+//
+// This example gets the variants for a sample at a specific position
+//
+
+// 1. First find the call set ID for the sample
+$.genomicsAjax('/callsets/search?fields=callSets(id)', {
+  method: 'POST',
+  data: JSON.stringify({variantSetIds: [datasetId], name: sample}),
+  success: function(json) {
+    var callSets = json.callSets || [];
+    if (callSets.length != 1) {
+      throw 'Searching for ' + sample +
+          ' didn\'t return the right number of call sets';
+    }
+
+    var callSetId = callSets[0].id;
+
+
+    // 2. Once we have the call set ID,
+    // lookup the variants that overlap the position we are interested in
+    var params = {
+      callSetIds: [callSetId],
+      referenceName: referenceName,
+      // Note: currently, variants are 0-based and reads are 1-based,
+      // reads will move to 0-based coordinates in the next version of the API
+      start: referencePosition - 1,
+      end: referencePosition
+    };
+    var variantFields = 'variants(names,referenceBases,alternateBases,' +
+        'calls(genotype))';
+    $.genomicsAjax('/variants/search?fields=' + variantFields, {
+      method: 'POST',
+      data: JSON.stringify(params),
+      success: function(json) {
+        var variant = json.variants[0];
+        var variantName = variant.names[0];
+
+        var genotype = _.map(variant.calls[0].genotype, function(g) {
+          return g == 0 ? variant.referenceBases
+              : variant.alternateBases[g - 1];
+        });
+
+        $('<div>').text('the called genotype is ' + genotype +
+            ' for ' + variantName).appendTo($('#results'));
       }
     });
   }
