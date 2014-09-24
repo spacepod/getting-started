@@ -23,15 +23,16 @@ shinyUI(fluidPage(
       textInput('clientId', label = 'Client ID'),
       textInput('clientSecret', label = 'Client Secret'),
       textInput('datasetId', label = 'Dataset ID', value = '376902546192'),
-      textInput('readsetName', label = 'Readset Name', value = 'NA12878'),
+      textInput('sample', label = 'Sample name', value = 'NA12872'),
       textInput('chr', label = 'Sequence name', value = '22'),
-      numericInput('position', label = 'Position', value = '51005354'),
+      numericInput('position', label = 'Position', value = '51003836'),
       div(a(href = 'http://github.com/googlegenomics/getting-started',
           'http://github.com/googlegenomics/getting-started'))
     ),
 
     mainPanel(
-      uiOutput('baseCounts')
+      uiOutput('baseCounts'),
+      uiOutput('genotype')
     )
   )
 ))

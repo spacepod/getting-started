@@ -18,10 +18,10 @@ library(httpuv)
 
 shinyServer(function(input, output) {
 
-  endpoint='https://www.googleapis.com/genomics/v1beta/'
+  endpoint = 'https://www.googleapis.com/genomics/v1beta/'
 
   #
-  # This example gets the read bases for NA12878 at specific a position
+  # This example gets the read bases for a sample at specific a position
   #
   google_token <- reactive({
     validate(
@@ -33,14 +33,14 @@ shinyServer(function(input, output) {
         scope = 'https://www.googleapis.com/auth/genomics')
   })
 
-  # 1. First find the readset ID for NA12878
+  # 1. First find the readset ID for the sample
   readsetId <- reactive({
     validate(
       need(input$datasetId != '', label = 'Dataset ID'),
-      need(input$readsetName != '', label = 'Readset Name')
+      need(input$sample != '', label = 'Sample Name')
     )
 
-    body <- list(datasetIds=list(input$datasetId), name=input$readsetName)
+    body <- list(datasetIds=list(input$datasetId), name=input$sample)
 
     res <- POST(paste(endpoint, 'readsets/search', sep=''),
         query=list(fields='readsets(id)'),
@@ -84,12 +84,75 @@ shinyServer(function(input, output) {
     
   output$baseCounts <- renderUI({
     counts <- baseCounts()
-    text <- list(paste(input$readsetName, 'bases on', input$chr, 'at',
-        input$position))
+    text <- list(paste(input$sample, 'bases on', input$chr, 'at',
+        input$position, 'are'))
     for(base in names(counts)) {
       text <- append(text, paste(base, ':', counts[[base]]))
     }
 
     div(lapply(text, div))
+  })
+
+
+  #
+  # This example gets the variants for a sample at a specific position
+  #
+
+  # 1. First find the call set ID for the sample
+  callSetId <- reactive({
+    validate(
+      need(input$datasetId != '', label = 'Dataset ID'),
+      need(input$sample != '', label = 'Sample Name')
+    )
+
+    body <- list(variantSetIds=list(input$datasetId), name=input$sample)
+
+    res <- POST(paste(endpoint, 'callsets/search', sep=''),
+        query=list(fields='callSets(id)'),
+        body=toJSON(body, auto_unbox=TRUE), config(token=google_token()),
+        add_headers('Content-Type'='application/json'))
+    stop_for_status(res)
+
+    callSets <- content(res)$callSets
+    validate(need(length(callSets) > 0, 'No call sets found for that name'))
+
+    callSets[[1]]$id
+  })
+
+  # 2. Once we have the call set ID,
+  # lookup the variants that overlap the position we are interested in
+  output$genotype <- renderUI({
+    validate(
+      need(input$chr != '', label = 'Sequence name'),
+      need(input$position > 0, 'Position must be greater than 0')
+    )
+
+    body <- list(callSetIds=list(callSetId()), referenceName=input$chr,
+        # Note: currently, variants are 0-based and reads are 1-based,
+        # reads will move to 0-based coordinates in the next version of the API
+        start=input$position - 1, end=input$position)
+
+    res <- POST(paste(endpoint, 'variants/search', sep=''),
+        query=list(fields=
+          'variants(names,referenceBases,alternateBases,calls(genotype))'),
+        body=toJSON(body, auto_unbox=TRUE), config(token=google_token()),
+        add_headers('Content-Type'='application/json'))
+    stop_for_status(res)
+
+    variants <- content(res)$variants
+    validate(need(length(variants) > 0, 'No variants found for that position'))
+    variant <- variants[[1]]
+    variantName <- variant$names[[1]]
+
+    genotype <- lapply(variant$calls[[1]]$genotype, function (g) {
+      if (g == 0) {
+        variant$referenceBases
+      } else {
+        variant$alternateBases[[g]]
+      }
+    })
+
+    div(paste('the called genotype is', paste(genotype, collapse = ','),
+        'for', variantName)[[1]])
   })
 })
