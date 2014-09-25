@@ -22,30 +22,31 @@ use Path::Class;
 use Net::OAuth2::Client;
 
 #
-# This example gets the read bases for NA12878 at specific a position
+# This example gets the read bases for a sample at specific a position
 #
 my $dataset_id = 376902546192; # This is the 1000 Genomes dataset ID
+my $sample = "NA12872";
 my $reference_name = "22";
-my $reference_position = 51005354;
+my $reference_position = 51003836;
 
 my $token = get_access_token();
 
-# 1. First find the readset ID for NA12878
+# 1. First find the readset ID for the sample
 my $json = call_api($token, "POST",
     "readsets/search?fields=readsets(id)",
-    ("datasetIds" => [$dataset_id], "name" => "NA12878"));
+    ("datasetIds" => [$dataset_id], "name" => $sample));
 my @readsets = @{$json->{readsets}};
 
-scalar(@readsets) == 1 or
-    die "Searching for NA12878 didn't return the right number of results";
-my $na12878 = $readsets[0]->{id};
+scalar(@readsets) == 1 or die "Searching for " . $sample .
+    " didn't return the right number of readsets";
+my $readset_id = $readsets[0]->{id};
 
 
 # 2. Once we have the readset ID,
 # lookup the reads at the position we are interested in
 $json = call_api($token, "POST",
     "reads/search?fields=reads(position,originalBases,cigar)",
-    ("readsetIds" => [$na12878],
+    ("readsetIds" => [$readset_id],
      "sequenceName" => $reference_name,
      "sequenceStart" => $reference_position,
      "sequenceEnd" => $reference_position,
@@ -59,11 +60,53 @@ foreach (@{$json->{reads}}) {
   $bases{$base}++;
 }
 
-print "NA12878 bases on ", $reference_name, " at ", $reference_position, "\n";
+print $sample, " bases on ", $reference_name, " at ",
+    $reference_position, " are\n";
 foreach my $base (keys %bases) {
   print "$base: $bases{$base}\n";
 }
 
+
+#
+# This example gets the variants for a sample at a specific position
+#
+
+# 1. First find the call set ID for the sample
+$json = call_api($token, "POST",
+    "callsets/search?fields=callSets(id)",
+    ("variantSetIds" => [$dataset_id], "name" => $sample));
+my @call_sets = @{$json->{callSets}};
+
+scalar(@call_sets) == 1 or die "Searching for " . $sample .
+    " didn't return the right number of call sets";
+my $call_set_id = $call_sets[0]->{id};
+
+
+# 2. Once we have the call set ID,
+# lookup the variants that overlap the position we are interested in
+$json = call_api($token, "POST",
+    "variants/search?fields=variants(names,referenceBases,alternateBases," .
+    "calls(genotype))",
+    ("callSetIds" => [$call_set_id],
+     "referenceName" => $reference_name,
+     # Note: currently, variants are 0-based and reads are 1-based,
+     # reads will move to 0-based coordinates in the next version of the API
+     "start" => $reference_position - 1,
+     "end" => $reference_position));
+
+my $variant = @{$json->{variants}}[0];
+my $variant_name = $variant->{names}[0];
+
+my @genotype;
+foreach (@{@{$variant->{calls}}[0]->{genotype}}) {
+  if ($_ == 0) {
+    push(@genotype, $variant->{referenceBases});
+  } else {
+    push(@genotype, @{$variant->{alternateBases}}[$_ - 1]);
+  }
+}
+
+print "the called genotype is ", @genotype, " for ", $variant_name, "\n";
 
 
 # Authorization code

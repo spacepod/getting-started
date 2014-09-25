@@ -6,8 +6,10 @@
 2. Install the perl dependencies and run the code:
 
     ```
+    cpanm Path::Class
     cpanm Net::OAuth2::Client
     cpanm Mozilla::CA
+    cpanm LWP::Protocol::https
     perl main.pl
     ```
 
