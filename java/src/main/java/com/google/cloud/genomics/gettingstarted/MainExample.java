@@ -90,7 +90,7 @@ public class MainExample {
       //
       // This example gets the read bases for a sample at specific a position
       //
-      String datasetId = "376902546192"; // This is the 1000 Genomes dataset ID
+      String datasetId = "10473108253681171589"; // This is the 1000 Genomes dataset ID
       String sample = "NA12872";
       String referenceName = "22";
       final Integer referencePosition = 51003836;

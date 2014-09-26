@@ -22,7 +22,7 @@ shinyUI(fluidPage(
     sidebarPanel(
       textInput('clientId', label = 'Client ID'),
       textInput('clientSecret', label = 'Client Secret'),
-      textInput('datasetId', label = 'Dataset ID', value = '376902546192'),
+      textInput('datasetId', label = 'Dataset ID', value = '10473108253681171589'),
       textInput('sample', label = 'Sample name', value = 'NA12872'),
       textInput('chr', label = 'Sequence name', value = '22'),
       numericInput('position', label = 'Position', value = '51003836'),

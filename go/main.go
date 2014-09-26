@@ -92,7 +92,7 @@ func main() {
 	//
 	// This example gets the read bases for NA12878 at specific a position
 	//
-	datasetId := "376902546192" // This is the 1000 Genomes dataset ID
+	datasetId := "10473108253681171589" // This is the 1000 Genomes dataset ID
 	sample := "NA12872"
 	referenceName := "22"
 	referencePosition := uint64(51003836)

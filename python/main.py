@@ -55,7 +55,7 @@ service = build('genomics', 'v1beta', http=http)
 #
 # This example gets the read bases for a sample at specific a position
 #
-dataset_id = 376902546192 # This is the 1000 Genomes dataset ID
+dataset_id = 10473108253681171589 # This is the 1000 Genomes dataset ID
 sample = 'NA12872'
 reference_name = '22'
 reference_position = 51003836

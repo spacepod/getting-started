@@ -24,7 +24,7 @@ use Net::OAuth2::Client;
 #
 # This example gets the read bases for a sample at specific a position
 #
-my $dataset_id = 376902546192; # This is the 1000 Genomes dataset ID
+my $dataset_id = 10473108253681171589; # This is the 1000 Genomes dataset ID
 my $sample = "NA12872";
 my $reference_name = "22";
 my $reference_position = 51003836;
