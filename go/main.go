@@ -140,48 +140,47 @@ func main() {
 
 	//
 	// This example gets the variants for a sample at a specific position
-	// TODO: The Go client library hasn't updated in a long while, so it
-	// doesn't have real variant support and none of this works!
+	//
 
-	//	// 1. First find the call set ID for the sample
-	//	csRes, err := svc.Callsets.Search(&genomics.SearchCallSetsRequest{
-	//		VariantSetIds: []string{datasetId},
-	//		Name:       sample,
-	//	}).Do()
-	//	if err != nil {
-	//		log.Fatal(err)
-	//	}
-	//	if len(csRes.CallSets) != 1 {
-	//		fmt.Fprintln(os.Stderr, "Searching for " + sample + " didn't return the right number of call sets")
-	//		return
-	//	}
-	//	callSetId := csRes.CallSets[0].Id
-	//
-	//	// 2. Once we have the call set ID,
-	//	// lookup the variants that overlap the position we are interested in
-	//	vRes, err := svc.Variants.Search(&genomics.SearchVariantsRequest{
-	//		CallSetIds:    []string{callSetId},
-	//		ReferenceName:  referenceName,
-	//      // Note: currently, variants are 0-based and reads are 1-based,
-	//      // reads will move to 0-based coordinates in the next version of the API
-	//		Start: referencePosition - 1,
-	//		End:   referencePosition,
-	//	}).Do()
-	//	if err != nil {
-	//		log.Fatal(err)
-	//	}
-	//
-	//  variant := vRes.Variants[0]
-	//  variantName := variant.Names[0]
-	//
-	//	genotype := make([]string, 2)
-	//	for i, g := range variant.Calls[0].Genotype {
-	//		if (g == 0) {
-	//			genotype[i] = variant.ReferenceBases
-	//		} else {
-	//			genotype[i] = variant.AlternateBases[g - 1]
-	//		}
-	//	}
-	//
-	//	fmt.Printf("the called genotype is %s for %s", sample, variantName)
+	// 1. First find the call set ID for the sample
+	csRes, err := svc.Callsets.Search(&genomics.SearchCallSetsRequest{
+		VariantSetIds: []string{datasetId},
+		Name:          sample,
+	}).Do()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if len(csRes.CallSets) != 1 {
+		fmt.Fprintln(os.Stderr, "Searching for "+sample+" didn't return the right number of call sets")
+		return
+	}
+	callSetId := csRes.CallSets[0].Id
+
+	// 2. Once we have the call set ID,
+	// lookup the variants that overlap the position we are interested in
+	vRes, err := svc.Variants.Search(&genomics.SearchVariantsRequest{
+		CallSetIds:    []string{callSetId},
+		ReferenceName: referenceName,
+		// Note: currently, variants are 0-based and reads are 1-based,
+		// reads will move to 0-based coordinates in the next version of the API
+		Start: int64(referencePosition - 1),
+		End:   int64(referencePosition),
+	}).Do()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	variant := vRes.Variants[0]
+	variantName := variant.Names[0]
+
+	genotype := make([]string, 2)
+	for i, g := range variant.Calls[0].Genotype {
+		if g == 0 {
+			genotype[i] = variant.ReferenceBases
+		} else {
+			genotype[i] = variant.AlternateBases[g-1]
+		}
+	}
+
+	fmt.Printf("the called genotype is %s for %s\n", sample, variantName)
 }
