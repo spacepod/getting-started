@@ -49,43 +49,43 @@ if credentials is None or credentials.invalid:
 # Create a genomics API service
 http = httplib2.Http()
 http = credentials.authorize(http)
-service = build('genomics', 'v1beta', http=http)
+service = build('genomics', 'v1beta2', http=http)
 
 
 #
 # This example gets the read bases for a sample at specific a position
 #
-dataset_id = 10473108253681171589 # This is the 1000 Genomes dataset ID
+dataset_id = '10473108253681171589' # This is the 1000 Genomes dataset ID
 sample = 'NA12872'
 reference_name = '22'
-reference_position = 51003836
+reference_position = 51003835
 
 
-# 1. First find the readset ID for the sample
-request = service.readsets().search(
+# 1. First find the read group set ID for the sample
+request = service.readgroupsets().search(
   body={'datasetIds': [dataset_id], 'name': sample},
-  fields='readsets(id)')
-readsets = request.execute().get('readsets', [])
-if len(readsets) != 1:
+  fields='readGroupSets(id)')
+read_group_sets = request.execute().get('readGroupSets', [])
+if len(read_group_sets) != 1:
   raise Exception('Searching for %s didn\'t return '
-                  'the right number of readsets' % sample)
+                  'the right number of read group sets' % sample)
 
-readset_id = readsets[0]['id']
+read_group_set_id = read_group_sets[0]['id']
 
-
-# 2. Once we have the readset ID,
+# 2. Once we have the read group set ID,
 # lookup the reads at the position we are interested in
 request = service.reads().search(
-  body={'readsetIds': [readset_id],
-        'sequenceName': reference_name,
-        'sequenceStart': reference_position,
-        'sequenceEnd': reference_position,
-        'maxResults': '1024'},
-  fields='reads(position,originalBases,cigar)')
-reads = request.execute().get('reads', [])
+  body={'readGroupSetIds': [read_group_set_id],
+        'referenceName': reference_name,
+        'start': reference_position,
+        'end': reference_position + 1,
+        'pageSize': 1024},
+  fields='alignments(alignment,alignedSequence)')
+reads = request.execute().get('alignments', [])
 
 # Note: This is simplistic - the cigar should be considered for real code
-bases = [read['originalBases'][reference_position - read['position']]
+bases = [read['alignedSequence'][
+           reference_position - int(read['alignment']['position']['position'])]
          for read in reads]
 
 print '%s bases on %s at %d are' % (sample, reference_name, reference_position)
@@ -115,10 +115,8 @@ call_set_id = call_sets[0]['id']
 request = service.variants().search(
   body={'callSetIds': [call_set_id],
         'referenceName': reference_name,
-        # Note: currently, variants are 0-based and reads are 1-based,
-        # reads will move to 0-based coordinates in the next version of the API
-        'start': reference_position - 1,
-        'end': reference_position},
+        'start': reference_position,
+        'end': reference_position + 1},
   fields='variants(names,referenceBases,alternateBases,calls(genotype))')
 variant = request.execute().get('variants', [])[0]
 

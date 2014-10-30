@@ -24,39 +24,39 @@ use Net::OAuth2::Client;
 #
 # This example gets the read bases for a sample at specific a position
 #
-my $dataset_id = 10473108253681171589; # This is the 1000 Genomes dataset ID
+my $dataset_id = "10473108253681171589"; # This is the 1000 Genomes dataset ID
 my $sample = "NA12872";
 my $reference_name = "22";
-my $reference_position = 51003836;
+my $reference_position = 51003835;
 
 my $token = get_access_token();
 
-# 1. First find the readset ID for the sample
+# 1. First find the read group set ID for the sample
 my $json = call_api($token, "POST",
-    "readsets/search?fields=readsets(id)",
+    "readgroupsets/search?fields=readGroupSets(id)",
     ("datasetIds" => [$dataset_id], "name" => $sample));
-my @readsets = @{$json->{readsets}};
+my @read_group_sets = @{$json->{readGroupSets}};
 
-scalar(@readsets) == 1 or die "Searching for " . $sample .
-    " didn't return the right number of readsets";
-my $readset_id = $readsets[0]->{id};
+scalar(@read_group_sets) == 1 or die "Searching for " . $sample .
+    " didn't return the right number of read group sets";
+my $read_group_set_id = $read_group_sets[0]->{id};
 
 
-# 2. Once we have the readset ID,
+# 2. Once we have the read group set ID,
 # lookup the reads at the position we are interested in
 $json = call_api($token, "POST",
-    "reads/search?fields=reads(position,originalBases,cigar)",
-    ("readsetIds" => [$readset_id],
-     "sequenceName" => $reference_name,
-     "sequenceStart" => $reference_position,
-     "sequenceEnd" => $reference_position,
-     "maxResults" => "1024"));
+    "reads/search?fields=alignments(alignment,alignedSequence)",
+    ("readGroupSetIds" => [$read_group_set_id],
+     "referenceName" => $reference_name,
+     "start" => $reference_position,
+     "end" => $reference_position + 1,
+     "pageSize" => 1024));
 
 my %bases;
-foreach (@{$json->{reads}}) {
+foreach (@{$json->{alignments}}) {
   # Note: This is simplistic - the cigar should be considered for real code
-  my $base = substr($_->{originalBases},
-      $reference_position - $_->{position}, 1);
+  my $base = substr($_->{alignedSequence},
+      $reference_position - $_->{alignment}->{position}->{position}, 1);
   $bases{$base}++;
 }
 
@@ -89,10 +89,8 @@ $json = call_api($token, "POST",
     "calls(genotype))",
     ("callSetIds" => [$call_set_id],
      "referenceName" => $reference_name,
-     # Note: currently, variants are 0-based and reads are 1-based,
-     # reads will move to 0-based coordinates in the next version of the API
-     "start" => $reference_position - 1,
-     "end" => $reference_position));
+     "start" => $reference_position,
+     "end" => $reference_position + 1));
 
 my $variant = @{$json->{variants}}[0];
 my $variant_name = $variant->{names}[0];
@@ -151,7 +149,7 @@ sub get_access_token {
 sub call_api {
   my($token, $method, $path, %body) = @_;
 
-  my $base_url = "https://www.googleapis.com/genomics/v1beta/";
+  my $base_url = "https://www.googleapis.com/genomics/v1beta2/";
   my $json_header = HTTP::Headers->new(Content_Type => "application/json");
 
   my $response = $token->request($method, $base_url . $path,

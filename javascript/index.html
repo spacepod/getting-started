@@ -22,8 +22,8 @@ limitations under the License.
 </head>
 <body>
 
-<div id="results" style="margin: 20px;">
-</div>
+<div id="results" style="margin: 20px 20px 0 20px;"></div>
+<div id="variantResults" style="margin: 0 20px;"></div>
 
 
 <script type="text/javascript">
@@ -40,44 +40,47 @@ if (!clientId) {
 //
 // This example gets the read bases for a sample at specific a position
 //
-var datasetId = 10473108253681171589; // This is the 1000 Genomes dataset ID
+var datasetId = '10473108253681171589'; // This is the 1000 Genomes dataset ID
 var sample = 'NA12872';
 var referenceName = '22';
-var referencePosition = 51003836;
+var referencePosition = 51003835;
 
-// 1. First find the readset ID for the sample
-$.genomicsAjax('/readsets/search?fields=readsets(id)', {
+// 1. First find the read group set ID for the sample
+$.genomicsAjax('/readgroupsets/search?fields=readGroupSets(id)', {
+  version: 'v1beta2',
   method: 'POST',
   data: JSON.stringify({datasetIds: [datasetId], name: sample}),
   success: function(json) {
-    var readsets = json.readsets || [];
-    if (readsets.length != 1) {
+    var readGroupSets = json.readGroupSets || [];
+    if (readGroupSets.length != 1) {
       throw 'Searching for ' + sample +
-          ' didn\'t return the right number of readsets';
+          ' didn\'t return the right number of read group sets';
     }
 
-    var readsetId = readsets[0].id;
+    var readGroupSetId = readGroupSets[0].id;
 
 
-    // 2. Once we have the readset ID,
+    // 2. Once we have the read group set ID,
     // lookup the reads at the position we are interested in
     var params = {
-      readsetIds: [readsetId],
-      sequenceName: referenceName,
-      sequenceStart: referencePosition,
-      sequenceEnd: referencePosition,
-      maxResults: '1024'
+      readGroupSetIds: [readGroupSetId],
+      referenceName: referenceName,
+      start: referencePosition,
+      end: referencePosition + 1,
+      pageSize: 1024
     };
-    var readFields = 'reads(position,originalBases,cigar)';
+    var readFields = 'alignments(alignment,alignedSequence)';
     $.genomicsAjax('/reads/search?fields=' + readFields, {
+      version: 'v1beta2',
       method: 'POST',
       data: JSON.stringify(params),
       success: function(json) {
-        var reads = json.reads || [];
+        var reads = json.alignments || [];
         var bases = _.map(reads, function(read) {
           // Note: This is simplistic -
           // the cigar should be considered for real code
-          return read.originalBases[referencePosition - read.position]
+          var position = read.alignment.position.position;
+          return read.alignedSequence[referencePosition - position]
         });
         var results = $('#results').text(sample + ' bases on ' + referenceName +
             ' at ' + referencePosition + ' are');
@@ -113,10 +116,8 @@ $.genomicsAjax('/callsets/search?fields=callSets(id)', {
     var params = {
       callSetIds: [callSetId],
       referenceName: referenceName,
-      // Note: currently, variants are 0-based and reads are 1-based,
-      // reads will move to 0-based coordinates in the next version of the API
-      start: referencePosition - 1,
-      end: referencePosition
+      start: referencePosition,
+      end: referencePosition + 1
     };
     var variantFields = 'variants(names,referenceBases,alternateBases,' +
         'calls(genotype))';
@@ -132,8 +133,8 @@ $.genomicsAjax('/callsets/search?fields=callSets(id)', {
               : variant.alternateBases[g - 1];
         });
 
-        $('<div>').text('the called genotype is ' + genotype +
-            ' for ' + variantName).appendTo($('#results'));
+        $('#variantResults').text('the called genotype is ' + genotype +
+            ' for ' + variantName);
       }
     });
   }

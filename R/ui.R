@@ -25,7 +25,7 @@ shinyUI(fluidPage(
       textInput('datasetId', label = 'Dataset ID', value = '10473108253681171589'),
       textInput('sample', label = 'Sample name', value = 'NA12872'),
       textInput('chr', label = 'Sequence name', value = '22'),
-      numericInput('position', label = 'Position', value = '51003836'),
+      numericInput('position', label = 'Position', value = '51003835'),
       div(a(href = 'http://github.com/googlegenomics/getting-started',
           'http://github.com/googlegenomics/getting-started'))
     ),

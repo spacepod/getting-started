@@ -26,10 +26,10 @@ import com.google.api.services.genomics.Genomics;
 import com.google.api.services.genomics.GenomicsScopes;
 import com.google.api.services.genomics.model.CallSet;
 import com.google.api.services.genomics.model.Read;
-import com.google.api.services.genomics.model.Readset;
+import com.google.api.services.genomics.model.ReadGroupSet;
 import com.google.api.services.genomics.model.SearchCallSetsRequest;
+import com.google.api.services.genomics.model.SearchReadGroupSetsRequest;
 import com.google.api.services.genomics.model.SearchReadsRequest;
-import com.google.api.services.genomics.model.SearchReadsetsRequest;
 import com.google.api.services.genomics.model.SearchVariantsRequest;
 import com.google.api.services.genomics.model.Variant;
 import com.google.cloud.genomics.utils.GenomicsFactory;
@@ -93,41 +93,42 @@ public class MainExample {
       String datasetId = "10473108253681171589"; // This is the 1000 Genomes dataset ID
       String sample = "NA12872";
       String referenceName = "22";
-      final Integer referencePosition = 51003836;
+      final Long referencePosition = 51003835L;
 
-      // 1. First find the readset ID for the sample
-      SearchReadsetsRequest readsetsReq = new SearchReadsetsRequest()
+      // 1. First find the read group set ID for the sample
+      SearchReadGroupSetsRequest readsetsReq = new SearchReadGroupSetsRequest()
           .setDatasetIds(Lists.newArrayList(datasetId))
           .setName(sample);
 
-      List<Readset> readsets = genomics.readsets().search(readsetsReq)
-          .setFields("readsets(id)").execute().getReadsets();
-      if (readsets == null || readsets.size() != 1) {
+      List<ReadGroupSet> readGroupSets = genomics.readgroupsets().search(readsetsReq)
+          .setFields("readGroupSets(id)").execute().getReadGroupSets();
+      if (readGroupSets == null || readGroupSets.size() != 1) {
         System.err.println("Searching for " + sample
-            + " didn't return the right number of readsets");
+            + " didn't return the right number of read group sets");
         return;
       }
 
-      String readsetId = readsets.get(0).getId();
+      String readGroupSetId = readGroupSets.get(0).getId();
 
 
-      // 2. Once we have the readset ID,
+      // 2. Once we have the read group set ID,
       // lookup the reads at the position we are interested in
       SearchReadsRequest readsReq = new SearchReadsRequest()
-          .setReadsetIds(Lists.newArrayList(readsetId))
-          .setSequenceName(referenceName)
-          .setSequenceStart(BigInteger.valueOf(referencePosition))
-          .setSequenceEnd(BigInteger.valueOf(referencePosition))
-          .setMaxResults(BigInteger.valueOf(1024));
+          .setReadGroupSetIds(Lists.newArrayList(readGroupSetId))
+          .setReferenceName(referenceName)
+          .setStart(BigInteger.valueOf(referencePosition))
+          .setEnd(BigInteger.valueOf(referencePosition + 1))
+          .setPageSize(1024);
 
       List<Read> reads = genomics.reads().search(readsReq)
-          .setFields("reads(position,originalBases,cigar)").execute().getReads();
+          .setFields("alignments(alignment,alignedSequence)").execute().getAlignments();
 
       Map<Character, Integer> baseCounts = Maps.newHashMap();
       for (Read read : reads) {
-        int index = referencePosition - read.getPosition();
+        int index = BigInteger.valueOf(referencePosition).subtract(
+            read.getAlignment().getPosition().getPosition()).intValue();
         // Note: This is simplistic - the cigar should be considered for real code
-        Character base = read.getOriginalBases().charAt(index);
+        Character base = read.getAlignedSequence().charAt(index);
 
         if (!baseCounts.containsKey(base)) {
           baseCounts.put(base, 0);
@@ -167,10 +168,8 @@ public class MainExample {
       SearchVariantsRequest variantsReq = new SearchVariantsRequest()
           .setCallSetIds(Lists.newArrayList(callSetId))
           .setReferenceName(referenceName)
-          // Note: currently, variants are 0-based and reads are 1-based,
-          // reads will move to 0-based coordinates in the next version of the API
-          .setStart(Long.valueOf(referencePosition) - 1)
-          .setEnd(Long.valueOf(referencePosition));
+          .setStart(referencePosition)
+          .setEnd(referencePosition + 1);
 
       Variant variant = genomics.variants().search(variantsReq)
           .setFields("variants(names,referenceBases,alternateBases,calls(genotype))")
