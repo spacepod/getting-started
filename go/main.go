@@ -98,12 +98,10 @@ func main() {
 	referencePosition := uint64(51003836)
 
 	// 1. First find the readset ID for the sample
-	// TODO: The go client library doesn't currently have support for partial responses
-	// see https://code.google.com/p/google-api-go-client/issues/detail?id=38
 	rsRes, err := svc.Readsets.Search(&genomics.SearchReadsetsRequest{
 		DatasetIds: []string{datasetId},
 		Name:       sample,
-	}).Do()
+	}).Fields("readsets(id)").Do()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -121,7 +119,7 @@ func main() {
 		SequenceStart: referencePosition,
 		SequenceEnd:   referencePosition,
 		MaxResults:    1024,
-	}).Do()
+	}).Fields("reads(position,originalBases,cigar)").Do()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -146,7 +144,7 @@ func main() {
 	csRes, err := svc.Callsets.Search(&genomics.SearchCallSetsRequest{
 		VariantSetIds: []string{datasetId},
 		Name:          sample,
-	}).Do()
+	}).Fields("callSets(id)").Do()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -165,7 +163,7 @@ func main() {
 		// reads will move to 0-based coordinates in the next version of the API
 		Start: int64(referencePosition - 1),
 		End:   int64(referencePosition),
-	}).Do()
+	}).Fields("variants(names,referenceBases,alternateBases,calls(genotype))").Do()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -182,5 +180,5 @@ func main() {
 		}
 	}
 
-	fmt.Printf("the called genotype is %s for %s\n", sample, variantName)
+	fmt.Printf("the called genotype is %s for %s\n", genotype, variantName)
 }
