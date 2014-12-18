@@ -16,9 +16,9 @@ package main
 import (
 	"bufio"
 	"code.google.com/p/goauth2/oauth"
-	"code.google.com/p/google-api-go-client/genomics/v1beta"
 	"flag"
 	"fmt"
+	"google.golang.org/api/genomics/v1beta2"
 	"log"
 	"net/http"
 	"os"
@@ -95,39 +95,39 @@ func main() {
 	datasetId := "10473108253681171589" // This is the 1000 Genomes dataset ID
 	sample := "NA12872"
 	referenceName := "22"
-	referencePosition := uint64(51003836)
+	referencePosition := int64(51003835)
 
-	// 1. First find the readset ID for the sample
-	rsRes, err := svc.Readsets.Search(&genomics.SearchReadsetsRequest{
+	// 1. First find the read group set ID for the sample
+	rsRes, err := svc.Readgroupsets.Search(&genomics.SearchReadGroupSetsRequest{
 		DatasetIds: []string{datasetId},
 		Name:       sample,
-	}).Fields("readsets(id)").Do()
+	}).Fields("readGroupSets(id)").Do()
 	if err != nil {
 		log.Fatal(err)
 	}
-	if len(rsRes.Readsets) != 1 {
-		fmt.Fprintln(os.Stderr, "Searching for "+sample+" didn't return the right number of readsets")
+	if len(rsRes.ReadGroupSets) != 1 {
+		fmt.Fprintln(os.Stderr, "Searching for "+sample+" didn't return the right number of read group sets")
 		return
 	}
-	readsetId := rsRes.Readsets[0].Id
+	readGroupSetId := rsRes.ReadGroupSets[0].Id
 
-	// 2. Once we have the readset ID,
+	// 2. Once we have the read group set ID,
 	// lookup the reads at the position we are interested in
 	rRes, err := svc.Reads.Search(&genomics.SearchReadsRequest{
-		ReadsetIds:    []string{readsetId},
-		SequenceName:  referenceName,
-		SequenceStart: referencePosition,
-		SequenceEnd:   referencePosition,
-		MaxResults:    1024,
-	}).Fields("reads(position,originalBases,cigar)").Do()
+		ReadGroupSetIds: []string{readGroupSetId},
+		ReferenceName:   referenceName,
+		Start:           referencePosition,
+		End:             referencePosition + 1,
+		PageSize:        1024,
+	}).Fields("alignments(alignment,alignedSequence)").Do()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	bases := make(map[uint8]int)
-	for _, read := range rRes.Reads {
+	for _, read := range rRes.Alignments {
 		// Note: This is simplistic - the cigar should be considered for real code
-		base := read.OriginalBases[referencePosition-uint64(read.Position)]
+		base := read.AlignedSequence[referencePosition-int64(read.Alignment.Position.Position)]
 		bases[base]++
 	}
 
@@ -159,10 +159,8 @@ func main() {
 	vRes, err := svc.Variants.Search(&genomics.SearchVariantsRequest{
 		CallSetIds:    []string{callSetId},
 		ReferenceName: referenceName,
-		// Note: currently, variants are 0-based and reads are 1-based,
-		// reads will move to 0-based coordinates in the next version of the API
-		Start: int64(referencePosition - 1),
-		End:   int64(referencePosition),
+		Start:         referencePosition,
+		End:           referencePosition + 1,
 	}).Fields("variants(names,referenceBases,alternateBases,calls(genotype))").Do()
 	if err != nil {
 		log.Fatal(err)

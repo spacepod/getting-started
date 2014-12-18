@@ -1,6 +1,6 @@
 # Getting started in Go
 
-1. Follow the first step on https://developers.google.com/genomics/ to setup
+1. Follow the first step on https://cloud.google.com/genomics/ to setup
  some client secrets. Save the "client ID" and "client secret" values from the
 "Client ID for native application" you just made.
 
@@ -11,7 +11,7 @@
 (Note: this will [require mercurial](http://golang.org/s/gogetcmd))
 
     ```
-    go get code.google.com/p/google-api-go-client/genomics/v1beta
+    go get google.golang.org/api/genomics/v1beta2
     go get code.google.com/p/goauth2/oauth
     ```
 
